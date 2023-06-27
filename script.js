@@ -1,88 +1,136 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const gameContainer = document.getElementById("gameContainer");
-  const scoreElement = document.getElementById("score");
+const snake = document.getElementById("pixel2");
+const gameContainer = document.getElementById("gameContainer")
+const scoreElement = document.getElementById("score");
 
-  const pixelSize = 10;
-  const gameSize = 400;
-  const rows = gameSize / pixelSize;
-  const cols = gameSize / pixelSize;
+let row = 1, column = 1 ;
 
-  let snake = [{ row: 19, col: 0 }];
-  let direction = "right";
-  let food = null;
-  let score = 0;
+let foodItemsList = [
+    // {
+    //     left: 10,
+    //     top: 200,
+    //     id: foodItems Id
+    // }
+]
 
-  function createPixel(id, className) {
-    const pixel = document.createElement("div");
-    pixel.className = className;
-    pixel.id = id;
-    return pixel;
-  }
-
-  function renderSnake() {
-    snake.forEach((pixel, index) => {
-      const pixelId = `pixel-${pixel.row}-${pixel.col}`;
-      const snakePixel = createPixel(pixelId, "pixel snakeBodyPixel");
-      gameContainer.appendChild(snakePixel);
-    });
-  }
-
-  function renderFood() {
-    if (food === null) {
-      const row = Math.floor(Math.random() * rows);
-      const col = Math.floor(Math.random() * cols);
-      const pixelId = `pixel-${row}-${col}`;
-      food = createPixel(pixelId, "pixel food");
-      gameContainer.appendChild(food);
-    }
-  }
-
-  function moveSnake() {
-    const head = Object.assign({}, snake[0]);
-    switch (direction) {
-      case "up":
-        head.row--;
-        break;
-      case "down":
-        head.row++;
-        break;
-      case "left":
-        head.col--;
-        break;
-      case "right":
-        head.col++;
-        break;
-    }
-    snake.unshift(head);
-
-    if (head.row === foodRow && head.col === foodCol) {
-      score++;
-      scoreElement.textContent = score;
-      gameContainer.removeChild(food);
-      food = null;
-    } else {
-      snake.pop();
+// rows = 40, columns = 40
+function eatFood(){
+    // if the snake's offset is equal to any one of the foodItem's offsets then update the score and delete that food item
+    let snakeTop = (row-1)*10;
+    let snakeLeft = (column - 1)*10 ;
+    let foodId; 
+    for(let i = 0 ; i < foodItemsList.length; i++){
+        if(foodItemsList[i].left == snakeLeft && foodItemsList[i].top == snakeTop){
+            scoreElement.innerText = parseInt(scoreElement.innerText) + 10 ;
+            foodId = foodItemsList[i].id;
+        }
     }
 
-    if (head.row < 0 || head.row >= rows || head.col < 0 || head.col >= cols) {
-      gameOver();
-      return;
+    if(!foodId) return ;
+
+    foodItemsList = foodItemsList.filter((food) => {
+        return food.id != foodId;
+    })
+
+    const capturedFoodItem = document.getElementById(foodId);
+    gameContainer.removeChild(capturedFoodItem);
+
+}
+
+function moveSnakeToRight() {
+    eatFood();
+    let currentLeftOffset = (column - 1) * 10 ;
+    snake.style.left = (currentLeftOffset + 10) + "px";
+    column++;
+    if(column == 41) {
+        column = 1 ;
+        snake.style.left = 0 + "px" ;
     }
+}
 
-    renderSnake();
+function moveSnakeToLeft() {
+    eatFood();
+    let currentLeftOffset = (column - 1) * 10 ;
+    snake.style.left = (currentLeftOffset - 10) + "px" ;
+    column -- ;
 
-    const tail = snake.slice(1);
-    if (tail.some((pixel) => pixel.row === head.row && pixel.col === head.col)) {
-      gameOver();
-      return;
+    if(column == 0){
+        column = 40 ;
+        snake.style.left = "390px" ;
     }
+}
 
-    setTimeout(moveSnake, 100);
-  }
+function moveSnakeToTop() {
+    eatFood();
+    let currentTopOffset = (row-1)*10;
+    snake.style.top = (currentTopOffset - 10) + "px"; 
+    row--;
 
-  function gameOver() {
-    alert("Game Over!");
-    snake = [{ row: 19, col: 0 }];
-    direction = "right";
-    score = 0;
-    scoreElement.textContent = score
+    if(row == 0){
+        row = 40 ;
+        snake.style.top = "390px" ;
+    }
+}
+
+function moveSnakeToBottom(){
+    eatFood();
+    let currentTopOffset = (row-1)*10 ;
+    snake.style.top = (currentTopOffset + 10) + "px" ;
+    row++;
+    if(row == 41){
+        row = 1 ;
+        snake.style.top = "0px" ;
+    }
+}
+
+
+// 20px
+// 20 + "px" => 20px
+// 20px
+let intervalId =  setInterval(moveSnakeToRight, 100)
+
+
+document.body.addEventListener("keyup", (e) => {
+    if(["ArrowRight", "ArrowDown", "ArrowUp", "ArrowLeft"].includes(e.key)){
+        clearInterval(intervalId);
+    }
+    if(e.key === "ArrowRight"){
+        intervalId = setInterval(moveSnakeToRight, 100)
+    }
+    else if(e.key === "ArrowDown"){
+        intervalId = setInterval(moveSnakeToBottom, 100);
+    }
+    else if(e.key === "ArrowUp"){
+        intervalId = setInterval(moveSnakeToTop, 100);
+    }
+    else if(e.key === "ArrowLeft"){
+        intervalId = setInterval(moveSnakeToLeft, 100);
+    }
+})
+
+
+
+function generateRandomOffset(){
+    // returns a number in [0, 10, 20, 30, 40 ...., 390]
+    let number = parseInt(Math.random()*100) ;
+    if(number > 40){
+        return parseInt(number/ 10)*10;
+    }
+    return number*10;
+}
+
+for(let i = 1 ;i <= 30; i++) {
+    const foodItem = document.createElement("div");
+    foodItem.className = "food" 
+    let id = "pixel"+(3 + i); // pixel4, pixel5, pixel6 ..
+    foodItem.id = id ;
+    let left = generateRandomOffset();
+    let top = generateRandomOffset();
+    let foodItemObject = {
+        left: left ,
+        top: top,
+        id: id
+    }
+    foodItemsList.push(foodItemObject);
+    foodItem.style.left = left + "px";
+    foodItem.style.top = top + "px";
+    gameContainer.append(foodItem);
