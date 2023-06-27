@@ -1,75 +1,88 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const container = document.getElementById('gameContainer');
-  const scoreElement = document.getElementById('score');
-  const width = 400;
-  const height = 400;
-  const pixelSize = 40;
-  const rows = height / pixelSize;
-  const cols = width / pixelSize;
-  const totalPixels = rows * cols;
+document.addEventListener("DOMContentLoaded", () => {
+  const gameContainer = document.getElementById("gameContainer");
+  const scoreElement = document.getElementById("score");
 
-  let snake = [
-    { row: 20, col: 1 },
-    { row: 20, col: 2 },
-    { row: 20, col: 3 }
-  ];
+  const pixelSize = 10;
+  const gameSize = 400;
+  const rows = gameSize / pixelSize;
+  const cols = gameSize / pixelSize;
 
-  let direction = 'right';
-  let food = {};
+  let snake = [{ row: 19, col: 0 }];
+  let direction = "right";
+  let food = null;
   let score = 0;
 
-  function createGrid() {
-    for (let i = 0; i < totalPixels; i++) {
-      const pixel = document.createElement('div');
-      pixel.classList.add('pixel');
-      pixel.setAttribute('id', `pixel${i + 1}`);
-      container.appendChild(pixel);
-    }
+  function createPixel(id, className) {
+    const pixel = document.createElement("div");
+    pixel.className = className;
+    pixel.id = id;
+    return pixel;
   }
 
-  function createSnake() {
-    for (let i = 0; i < snake.length; i++) {
-      const { row, col } = snake[i];
-      const pixelIndex = (row - 1) * cols + col;
-      const snakePixel = document.getElementById(`pixel${pixelIndex}`);
-      snakePixel.classList.add('snakeBodyPixel');
-    }
+  function renderSnake() {
+    snake.forEach((pixel, index) => {
+      const pixelId = `pixel-${pixel.row}-${pixel.col}`;
+      const snakePixel = createPixel(pixelId, "pixel snakeBodyPixel");
+      gameContainer.appendChild(snakePixel);
+    });
   }
 
-  function generateFood() {
-    const availablePixels = Array.from(Array(totalPixels).keys());
-    const snakePixels = snake.map(pixel => (pixel.row - 1) * cols + pixel.col);
-    const emptyPixels = availablePixels.filter(pixel => !snakePixels.includes(pixel));
-    const randomIndex = Math.floor(Math.random() * emptyPixels.length);
-    const foodPixelIndex = emptyPixels[randomIndex];
-    const foodPixel = document.getElementById(`pixel${foodPixelIndex}`);
-    foodPixel.classList.add('food');
-    food.row = Math.floor(foodPixelIndex / cols) + 1;
-    food.col = (foodPixelIndex % cols) + 1;
+  function renderFood() {
+    if (food === null) {
+      const row = Math.floor(Math.random() * rows);
+      const col = Math.floor(Math.random() * cols);
+      const pixelId = `pixel-${row}-${col}`;
+      food = createPixel(pixelId, "pixel food");
+      gameContainer.appendChild(food);
+    }
   }
 
   function moveSnake() {
     const head = Object.assign({}, snake[0]);
-
     switch (direction) {
-      case 'up':
+      case "up":
         head.row--;
         break;
-      case 'down':
+      case "down":
         head.row++;
         break;
-      case 'left':
+      case "left":
         head.col--;
         break;
-      case 'right':
+      case "right":
         head.col++;
         break;
     }
+    snake.unshift(head);
 
-    if (head.row < 1 || head.row > rows || head.col < 1 || head.col > cols) {
+    if (head.row === foodRow && head.col === foodCol) {
+      score++;
+      scoreElement.textContent = score;
+      gameContainer.removeChild(food);
+      food = null;
+    } else {
+      snake.pop();
+    }
+
+    if (head.row < 0 || head.row >= rows || head.col < 0 || head.col >= cols) {
       gameOver();
       return;
     }
 
-    const newHeadPixelIndex = (head.row - 1) * cols + head.col;
-    const newHeadPixel = document
+    renderSnake();
+
+    const tail = snake.slice(1);
+    if (tail.some((pixel) => pixel.row === head.row && pixel.col === head.col)) {
+      gameOver();
+      return;
+    }
+
+    setTimeout(moveSnake, 100);
+  }
+
+  function gameOver() {
+    alert("Game Over!");
+    snake = [{ row: 19, col: 0 }];
+    direction = "right";
+    score = 0;
+    scoreElement.textContent = score
